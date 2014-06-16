@@ -2,7 +2,7 @@
 title: English Patient
 email: kimhyunkang@gmail.com
 description: "A microblog about Rust and other stuff"
-baseurl: ""
+baseurl: "/blog"
 url: "http://kimhyunkang.github.io"
 
 # Build settings
