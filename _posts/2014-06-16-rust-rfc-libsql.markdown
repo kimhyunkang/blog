@@ -3,7 +3,7 @@ layout: post
 title: "Rust RFC: libsql &amp; libsql_macro"
 date: 2014-06-16 11:41:43 +0900
 comments: true
-categories: Rust libsql
+categories:
 ---
 
 I'm trying to create a type-safe, implementation-neutral DSL to relational database systems. This is going be a fairly large project, and considering the importance of SQL libraries, I want as many criticism as possible in the earliest design phase. Please feel free to send me a feedback by the comment or by email (kimhyunkang at gmail.com).
