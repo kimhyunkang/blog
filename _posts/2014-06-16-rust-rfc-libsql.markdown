@@ -26,7 +26,7 @@ extern crate sqladapter_sqlite3;
 use sql::SqlTable;
 use sqladapter_sqlite3::SqliteError;
 
-#[sql_table]
+#[sql_table(primary_key="id")]
 pub struct Person {
   // TableRef class represents primary key to the table
   pub id: TableRef<Person>,
@@ -36,8 +36,11 @@ pub struct Person {
 
 fn create_person_table() -> Result<bool, SqliteError> {
   let mut connection = try!(sqladapter_sqlite3::open("person.sqlite3"));
-  return connection.create_table_if_not_exists::<Person>();
-  // -> CREATE TABLE IF NOT EXISTS Person (id INTEGER NOT NULL, name TEXT NOT NULL, address TEXT);
+  return connection.create_table::<Person>();
+  // CREATE TABLE Person (
+  //      id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  //      name TEXT NOT NULL,
+  //      address TEXT);
 }
 {% endhighlight %}
 
@@ -50,8 +53,8 @@ Select query is done by macro
 fn select_by_name(name: String) -> Result<Vec<Person>, SqliteError> {
   let mut connection = try!(sqladapter_sqlite3::open("person.sqlite3"));
 
-  // {s} denotes a binding variable with type String
-  let query = sql!(SELECT * FROM Person WHERE name == {s});
+  // {:s} denotes a binding variable with type String
+  let query = sql!(SELECT * FROM Person WHERE name == {:s});
 
   // prepare statement
   let mut stmt = try!(connection.prepare_select(query));
@@ -71,7 +74,7 @@ For example:
 * Select from table which does not implement `SqlTable` is not allowed.
 * Selecting column names not defined in the `Person` table is not allowed.
 * `String` field does not allow `NULL`, but `Option<String>` field allows `NULL`, which translates into `None` in the Rust code.
-* `{s}` enforces types of the binding. If you compare different types in the `WHERE` clause, or if you bind types other than String, the compiler throws type error.
+* `{:s}` enforces types of the binding. If you compare different types in the `WHERE` clause, or if you bind types other than String, the compiler throws type error.
 
 Insert query is done without macro:
 
@@ -79,8 +82,8 @@ Insert query is done without macro:
 fn insert_person(name: String, address: Option<String>) -> Result<bool, SqliteError> {
   let mut connection = try!(sqladapter_sqlite3::open("person.sqlite3"));
   let person = Person {
-    // NullRef represents that we don't know the id of the record yet
-    id: NullRef,
+    // null() represents that we don't know the id of the record yet
+    id: TableRef::null(),
     name: name,
     address: address
   };
@@ -93,17 +96,17 @@ fn insert_person(name: String, address: Option<String>) -> Result<bool, SqliteEr
 
 The DSL `sql!` looks like SQL, but will be different from standard SQL in some ways.
 
-* To support unified interface over various RDBMSs, `sql!` macro would support a subset of standard SQL. I'm thinking about two DDL queries, `CREATE` and `DROP` (no `ALTER`), and four DML queries, `SELECT`, `INSERT`, `UPDATE` and `DELETE`.
+* To support unified interface over various RDBMSs, `sql!` macro would support a subset of standard SQL. I'm thinking about two DDL queries, `CREATE` and `DROP`, and four DML queries, `SELECT`, `INSERT`, `UPDATE` and `DELETE`.
 * I'm going to disallow any implicit type conversion. Even `Option<T>` <-> `T` won't be implicit.
 * When selecting from multiple tables, column reference would always require table names. For example, `SELECT a, b FROM Table1, Table2` will be disallowed even if column names are not ambiguous.
-* Types of binding variables will be explicitly annotated.
+* Types of binding variables will be explicitly annotated. `{:s}` denotes `String`, `{:s?}` denotes `Option<String>`, and so on...
 
-## Proposed internal representation
+## Possible internal representation
 
-The internal representation is bound to change frequently, as it is not intended to directly created by user. Currently, I'm planning to create something like this.
+The internal representation is going to change time to time, as it is not intended to directly created by users. Currently I'm planning to generate something like this.
 
 {% highlight rust %}
-  let query = sql!(SELECT id, address FROM Person WHERE name == {s});
+  let query = sql!(SELECT id, address FROM Person WHERE name == {:s});
 
   // Above query would roughly translate into below
 
@@ -149,7 +152,7 @@ Additionally, each adapter library must implement QueryProfile, which represents
 
 ## Things which need more thoughts
 
-* Index handling
+* Type-safe `CREATE INDEX` query
 * Collate handling / unicode handling
 * Extensibility of the type system
 * Limited ability to generate queries in runtime
