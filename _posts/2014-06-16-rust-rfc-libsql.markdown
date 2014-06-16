@@ -8,6 +8,14 @@ categories:
 
 I'm trying to create a type-safe, implementation-neutral DSL to relational database systems. This is going be a fairly large project, and considering the importance of SQL libraries, I want as many criticism as possible in the earliest design phase. Please feel free to send me a feedback by the comment or by email (kimhyunkang at gmail.com).
 
+## Design goal
+
+The goal this library is trying to achieve is:
+
+* A unified interface to access various RDBMS systems
+* SQL-like DSL to generate SQL queries
+* Type-safe database manipulation
+
 The system would be separated into three subsystems.
 
 * Compiler macro for rustc, which translates an SQL-like DSL into an internal representation.
